@@ -1,0 +1,22 @@
+{
+  "_comment": "Host this file in your repo (raw URL set in src/config.js). Only people running Yapcord draw these. They are custom Yapcord badges, NOT official Yapper badges.",
+  "badges": {
+    "boss":        { "emoji": "👑", "label": "Boss" },
+    "founder":     { "emoji": "🛠️", "label": "Yapcord Founder" },
+    "dev":         { "emoji": "💻", "label": "Plugin Dev" },
+    "helper":      { "emoji": "🤝", "label": "Yapcord Helper" },
+    "supporter":   { "emoji": "💜", "label": "Supporter" },
+    "tester":      { "emoji": "🧪", "label": "Tester" },
+    "bughunter":   { "emoji": "🐛", "label": "Bug Hunter" },
+    "translator":  { "emoji": "🌍", "label": "Translator" },
+    "themer":      { "emoji": "🎨", "label": "Theme Maker" },
+    "earlybird":   { "emoji": "🐣", "label": "Early Bird" },
+    "nightowl":    { "emoji": "🦉", "label": "Night Owl" },
+    "og":          { "emoji": "🔥", "label": "OG Yapcorder" },
+    "yapper":      { "emoji": "🗣️", "label": "Certified Yapper" },
+    "cat":         { "emoji": "🐱", "label": "Cat Person" }
+  },
+  "users": {
+    "REPLACE_WITH_YAPPER_USER_ID": { "badges": ["boss", "founder", "og"], "tag": "Boss" }
+  }
+}

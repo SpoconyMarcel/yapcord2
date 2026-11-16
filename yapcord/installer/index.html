@@ -1,0 +1,103 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Yapcord Installer</title>
+<style>
+*{box-sizing:border-box;font-family:"Segoe UI",system-ui,sans-serif}
+body{margin:0;background:#1e2328;color:#e6e8ea;padding:34px 40px;font-size:15px}
+h1{text-align:center;font-weight:400;font-size:36px;margin:6px 0 30px}
+p{margin:0 0 8px}.gap{margin-top:18px}
+a.link{background:#5865f2;color:#fff;padding:1px 8px;border-radius:3px;cursor:pointer;margin-left:6px;font-size:14px}
+hr{border:0;border-top:1px solid #2f3b3f;margin:22px 0}
+.warn{background:#e8d457;color:#222;border-radius:6px;padding:12px 14px;line-height:1.35;margin-bottom:20px}
+.warn a{color:#222;font-weight:600;cursor:pointer;text-decoration:underline}
+h2{font-weight:400;font-size:26px;margin:0 0 10px}
+.opt{display:flex;align-items:center;gap:10px;margin:8px 0;cursor:pointer}
+.opt i{width:20px;height:20px;border-radius:50%;background:#2b333b;border:0;flex:none}
+.opt input{display:none}.opt input:checked+i{background:#3b82f6;box-shadow:inset 0 0 0 5px #3b82f6,inset 0 0 0 10px #fff}
+.opt input:checked+i{background:radial-gradient(#fff 0 35%,#3b82f6 40%)}
+#custom{width:100%;margin:12px 0 22px;background:#2f3a42;border:1px solid #3a4650;border-radius:5px;color:#e6e8ea;padding:14px;font-size:15px}
+#custom:disabled{opacity:.6}
+.btns{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+button{border:0;border-radius:4px;padding:14px;font-size:15px;color:#fff;cursor:pointer}
+button:disabled{opacity:.4;cursor:not-allowed}
+.g{background:#2d7d46}.b{background:#5865f2}.r{background:#ed4245}
+#msg{margin-top:16px;min-height:22px;font-size:14px}.ok{color:#57f287}.err{color:#ff7b82}
+.out{color:#e8d457}
+</style></head><body>
+<h1>Yapcord Installer</h1>
+<p>Files will be downloaded to: <span id="dist"></span> <a class="link" id="open">Open Directory</a></p>
+<p>To customise this location, set the environment variable 'YAPCORD_USER_DATA_DIR' and restart me</p>
+<p class="gap">Installer Version: <span id="iv"></span><span id="out" class="out"></span></p>
+<p>Local Yapcord Version: <span id="lv"></span></p>
+<p>Latest Yapcord Version: <span id="nv"></span></p>
+<hr>
+<div class="warn">GitHub (<a id="gh"></a>) is the only official place to get Yapcord. Any other site claiming to be us is malicious.<br>
+If you downloaded from any other source, you should delete / uninstall everything immediately, run a malware scan and change your Yapper password.</div>
+<h2>Please select an install to patch</h2>
+<div id="list"></div>
+<label class="opt"><input type="radio" name="i" value="custom"><i></i><span>Custom Install Location</span></label>
+<input id="custom" placeholder="The custom location" disabled>
+<div class="btns"><button class="g" id="install">Install</button><button class="b" id="repair">Reinstall / Repair</button><button class="r" id="uninstall">Uninstall</button></div>
+<div id="msg"></div>
+<script>
+const $ = (id) => document.getElementById(id);
+let installs = [], sel = null;
+const tag = (s) => s.installed ? " [PATCHED]" : s.needsRepair ? " [NEEDS REPAIR]" : "";
+
+function renderList() {
+  $("list").innerHTML = installs.map((x, i) =>
+    `<label class="opt"><input type="radio" name="i" value="${i}" ${sel === x ? "checked" : ""}><i></i><span>${x.label} - ${x.dir}${tag(x.status)}</span></label>`).join("");
+  update();
+}
+function update() {
+  const st = sel && sel.status;
+  $("install").disabled = !st;
+  $("repair").disabled = !st;
+  $("uninstall").disabled = !st;
+}
+document.addEventListener("change", async (e) => {
+  if (e.target.name !== "i") return;
+  const custom = e.target.value === "custom";
+  $("custom").disabled = !custom;
+  if (custom) { sel = null; update(); $("custom").focus(); } else { sel = installs[+e.target.value]; update(); }
+});
+$("custom").addEventListener("change", async () => {
+  const r = await window.api.resolve($("custom").value.trim());
+  sel = r; update();
+  $("msg").className = r ? "" : "err";
+  $("msg").textContent = r ? `Found Yapper at ${r.dir}${tag(r.status)}` : "No Yapper 'resources' folder found there.";
+});
+$("custom").addEventListener("dblclick", async () => { const p = await window.api.browse(); if (p) { $("custom").value = p; $("custom").dispatchEvent(new Event("change")); } });
+
+async function run(a) {
+  if (!sel) return;
+  $("msg").className = ""; $("msg").textContent = "Working… (Yapper will be closed and restarted automatically)";
+  [...document.querySelectorAll("button")].forEach((b) => b.disabled = true);
+  const r = await window.api.run(a, sel.res);
+  if (r.ok) {
+    sel.status = r.status;
+    $("msg").className = "ok";
+    $("msg").textContent = ({ install: "Installed!", repair: "Repaired!", uninstall: "Uninstalled!" })[a] + (r.restarted ? " Yapper has been restarted." : "");
+    refreshInfo();
+  } else { $("msg").className = "err"; $("msg").textContent = r.error; }
+  renderList();
+}
+$("install").onclick = () => run("install");
+$("repair").onclick = () => run("repair");
+$("uninstall").onclick = () => run("uninstall");
+$("open").onclick = () => window.api.openDir();
+$("gh").onclick = () => window.api.openUrl("https://github.com/" + $("gh").textContent);
+
+async function refreshInfo() {
+  const i = await window.api.info();
+  $("dist").textContent = i.distDir; $("iv").textContent = i.installer;
+  $("out").textContent = i.outdated ? " - OUTDATED" : "";
+  $("lv").textContent = i.local; $("nv").textContent = i.latest; $("gh").textContent = i.repo;
+}
+(async () => {
+  refreshInfo();
+  installs = await window.api.installs();
+  sel = installs[0] || null;
+  renderList();
+  if (!installs.length) { $("msg").className = "err"; $("msg").textContent = "Yapper was not found automatically. Choose 'Custom Install Location' and double-click the box to browse."; }
+})();
+</script></body></html>
